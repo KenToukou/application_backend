@@ -16,7 +16,7 @@ services:
     restart: always
     tty: true
     environment:
-      MYSQL_DATABASE: manabis_db
+      MYSQL_DATABASE: manavis_db
       MYSQL_USER: user
       MYSQL_PASSWORD: password # ユーザのパスワード
       MYSQL_ROOT_PASSWORD: password # ルートパスワード
@@ -27,7 +27,7 @@ services:
       - ./docker/local/mysql/conf.d:/etc/mysql/conf.d # MySQLの基本設定(文字化け対策)
       - ./docker/local/mysql/log:/var/log/mysql # ログの保存
     networks:
-      - manabis-net
+      - manavis-net
 
   # # DBツール
   # phpmyadmin:
@@ -46,7 +46,7 @@ services:
   #   volumes:
   #     - ./docker/local/phpmyadmin/sessions:/sessions
   #   networks:
-  #     - manabis-net
+  #     - manavis-net
 
   # Backend
   backend:
@@ -64,16 +64,16 @@ services:
     environment:
       - ENV=local
       - TZ=Asia/Tokyo
-      - DB_URL=mysql+mysqlconnector://user:password@db_primary/manabis_db
+      - DB_URL=mysql+mysqlconnector://user:password@db_primary/manavis_db
     working_dir: /backend
     command: uvicorn main:app --host=0.0.0.0 --port=80 --reload
     depends_on:
       - db
     networks:
-      - manabis-net
+      - manavis-net
   # # Frontend
   # frontend:
-  #   container_name: manabis_frontend
+  #   container_name: manavis_frontend
   #   build:
   #     context: .
   #     dockerfile: ./docker/frontend/Dockerfile
@@ -91,8 +91,8 @@ services:
   #   depends_on:
   #     - backend
   #   networks:
-  #     - manabis-net
+  #     - manavis-net
 
 networks:
-  manabis-net:
+  manavis-net:
     driver: bridge

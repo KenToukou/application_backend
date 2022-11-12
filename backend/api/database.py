@@ -7,7 +7,7 @@ import sqlalchemy.orm
 user = 'user'
 password = 'password'
 host = 'localhost'
-db_name = 'manabis_db'
+db_name = 'manavis_db'
 db_option = "charset=utf8mb4&collation=utf8mb4_general_ci"
 db_pool_size = 10
 db_max_overflow = 40
