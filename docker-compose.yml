@@ -1,0 +1,98 @@
+version: "3"
+services:
+
+  ######################################################################
+  # Application components
+  ######################################################################
+
+  # MySQL
+  db:
+    container_name: "db_primary"
+    # path配下のDockerfile読み込み
+    build:
+      context: .
+      dockerfile: ./docker/local/mysql/Dockerfile
+    # コンテナが落ちたら再起動する
+    restart: always
+    tty: true
+    environment:
+      MYSQL_DATABASE: manabis_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password # ユーザのパスワード
+      MYSQL_ROOT_PASSWORD: password # ルートパスワード
+      TZ: Asia/Tokyo
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/local/mysql/conf.d:/etc/mysql/conf.d # MySQLの基本設定(文字化け対策)
+      - ./docker/local/mysql/log:/var/log/mysql # ログの保存
+    networks:
+      - manabis-net
+
+  # # DBツール
+  # phpmyadmin:
+  #   image: phpmyadmin/phpmyadmin
+  #   restart: always
+  #   environment:
+  #     - PMA_ARBITRARY=1
+  #     - PMA_HOSTS=db_primary, db_replica
+  #     - PMA_USER=root
+  #     - PMA_PASSWORD=password
+  #   depends_on:
+  #     - db_primary
+  #     - db_replica
+  #   ports:
+  #     - 5001:80
+  #   volumes:
+  #     - ./docker/local/phpmyadmin/sessions:/sessions
+  #   networks:
+  #     - manabis-net
+
+  # Backend
+  backend:
+    &backend
+    container_name: backend
+    build:
+      context: .
+      dockerfile: ./docker/backend/Dockerfile
+      target: local-backend
+    volumes:
+      - ./backend:/backend
+      # - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 5000:80
+    environment:
+      - ENV=local
+      - TZ=Asia/Tokyo
+      - DB_URL=mysql+mysqlconnector://user:password@db_primary/manabis_db
+    working_dir: /backend
+    command: uvicorn main:app --host=0.0.0.0 --port=80 --reload
+    depends_on:
+      - db
+    networks:
+      - manabis-net
+  # # Frontend
+  # frontend:
+  #   container_name: manabis_frontend
+  #   build:
+  #     context: .
+  #     dockerfile: ./docker/frontend/Dockerfile
+  #     args:
+  #       - BUILD_ENV=local
+  #   # volumes:
+  #   #   - ./app/frontend:/app/frontend
+  #   #   - ./lib:/app/lib
+  #   ports:
+  #     - 3000:80
+  #   environment:
+  #     - ENV=local
+  #   working_dir: /app/frontend
+  #   command: yarn start:local --port 80
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - manabis-net
+
+networks:
+  manabis-net:
+    driver: bridge
