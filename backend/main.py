@@ -1,7 +1,7 @@
 
 from datetime import timedelta
 from typing import List
-
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -18,7 +18,19 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 app = FastAPI()
 
+origins = [
+    "https://client-hoge",
+    "http://localhost",
+    "http://localhost:8080",
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Dependency
 # def get_db():
 #     db = SessionLocal()
@@ -26,6 +38,8 @@ app = FastAPI()
 #         yield db
 #     finally:
 #         db.close()
+
+
 @app.get("/auth/logout")
 async def read_items(token: str = Depends(oauth2_scheme)):
     return {"token": token}
