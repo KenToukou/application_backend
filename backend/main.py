@@ -2,14 +2,14 @@
 from datetime import timedelta
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-
+from enum import Enum
 from api import crud, schemas
 from api.auth import (authenticate_user, create_access_token,
-                      get_current_active_user, get_current_user, oauth2_scheme)
+                      create_refresh_token, get_current_user, oauth2_scheme)
 from api.database import SessionLocal, engine, get_db
 
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
@@ -18,19 +18,41 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 app = FastAPI()
 
+
+class ModelName(str, Enum):
+    username = "username"
+    password = "password"
+
+
 origins = [
-    "https://client-hoge",
-    "http://localhost",
-    "http://localhost:8080",
+
+    "http://localhost:51156",
+
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["POST", "GET", "OPTIONS", "DELETE"],
+#     allow_headers={"X-Requested-With", "Origin",
+#                    "X-Csrftoken", "Content-Type", "Accept"},
+
+# )
 # Dependency
 # def get_db():
 #     db = SessionLocal()
@@ -48,12 +70,8 @@ async def read_items(token: str = Depends(oauth2_scheme)):
 @app.post("/token")
 async def login(db: Session = Depends(get_db),
                 form_data: OAuth2PasswordRequestForm = Depends()):
-    print("hello !")
-    print(form_data.username)
-    print(form_data.password)
 
     user = authenticate_user(db, form_data.username, form_data.password)
-    print(user)
 
     if not user:
         raise HTTPException(
@@ -62,12 +80,17 @@ async def login(db: Session = Depends(get_db),
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    print("Congratulation")
+    refresh_token_expires = timedelta(days=20)
     access_token = create_access_token(
         data={"sub": user}, expires_delta=access_token_expires
     )
+    refresh_token = create_refresh_token(
+        data={"sub": user}, expires_delta=refresh_token_expires)
+    user_info = crud.get_user_by_name(db, form_data.username)
+    user_info_id = user_info.id
+
     print(access_token)
-    return {"access_token": access_token, "token_type": "bearer", "Create": "Now"}
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "user_id": str(user_info_id)}
     # ここでusernameをキーにして、DBのUsersから該当のユーザーを取得し、
     # パスワードが一致しているかチェックする.一致していなかった場合は400 BadRequestを返す
 
@@ -77,7 +100,7 @@ async def login(db: Session = Depends(get_db),
 
 
 @app.get("/view_token")
-async def read_items(token: str = Depends(oauth2_scheme)):
+async def read_items_token(token: str = Depends(oauth2_scheme)):
     return {"token": token}
 
 
@@ -145,12 +168,15 @@ def update_password(
 
 @app.put("/articles/{article_id}", response_model=schemas.ArticleSelect)
 def add_confirmed_user(
-    article_id: int, user: schemas.AddConfirmedUser, db: Session = Depends(get_db)
+    article_id: str, user: schemas.AddConfirmedUser, db: Session = Depends(get_db)
 ):
     return crud.add_confirmed_user(db=db, article_id=article_id, user_id=user.user_id)
 
+# "PUT /articles/37 HTTP/1.1" 200 OK
+# "PUT /articles/37 HTTP/1.1" 422 Unprocessable Entity
 
-@app.post("/users/{user_id}/articles", response_model=schemas.ArticleSelect)
+
+@app.post("/users/{user_id:int}/articles", response_model=schemas.ArticleSelect)
 def add_article(
     user_id: int, article: schemas.ArticleCreate, db: Session = Depends(get_db)
 ):

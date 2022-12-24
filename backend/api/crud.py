@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-
+from sqlalchemy import desc
 
 from api import models, schemas
 
@@ -50,7 +50,7 @@ def create_user(db: Session, user: schemas.UserCreate):
 
 
 def get_articles(db: Session, skip: int = 0, limit: int = 0):
-    return db.query(models.Article).offset(skip).limit(limit).all()
+    return db.query(models.Article).order_by(desc(models.Article.id)).offset(skip).limit(limit).all()
 
 
 def create_article(db: Session, article: schemas.ArticleCreate, user_id: int):
@@ -61,9 +61,9 @@ def create_article(db: Session, article: schemas.ArticleCreate, user_id: int):
     return db_article
 
 
-def add_confirmed_user(db: Session, article_id: int, user_id: int):
-    db_article = get_article_by_id(db=db, article_id=article_id)
-    new_confirmed_user = get_user_by_id(db=db, user_id=user_id)
+def add_confirmed_user(db: Session, article_id: str, user_id: str):
+    db_article = get_article_by_id(db=db, article_id=int(article_id))
+    new_confirmed_user = get_user_by_id(db=db, user_id=int(user_id))
     db_article.confirmed_users.append(new_confirmed_user)
     print(db_article.confirmed_users)
     db.merge(db_article)

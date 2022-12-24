@@ -30,7 +30,7 @@ class PasswordUpdate(BaseModel):
 
 class UserCreate(BaseModel):
     name: str
-    hashed_password: Optional[str]
+    hashed_password: str
 
 
 class UserSelect(BaseModel):
@@ -67,4 +67,4 @@ class ArticleSelect(BaseModel):
 
 
 class AddConfirmedUser(BaseModel):
-    user_id: int
+    user_id: str
