@@ -56,7 +56,7 @@ app.add_middleware(
 
 
 @app.get("/auth/logout")
-async def read_items(token: str = Depends(oauth2_scheme)):
+async def read_master(token: str = Depends(oauth2_scheme)):
     return {"token": token}
 
 
@@ -97,7 +97,7 @@ async def login(db: Session = Depends(get_db),
 
 
 @app.get("/view_token")
-async def read_items_token(token: str = Depends(oauth2_scheme),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["items"])):
+async def read_items_token(token: str = Depends(oauth2_scheme),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])):
     if not current_user:
         return False
     return {"token": token}
@@ -115,7 +115,7 @@ async def read_users_me(current_user=Depends(auth.get_current_active_user)):
 
 
 @app.get("/users", response_model=List[schemas.UserSelect])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["items"])):
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])):
     if not current_user:
         return False
     users = crud.get_users(db, skip=skip, limit=limit)
@@ -123,7 +123,7 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),cu
 
 
 @app.post("/users", response_model=schemas.UserSelect)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["items"])):
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])):
     if not current_user:
         return False
     
@@ -135,7 +135,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db),current_
 
 
 @app.post("/add_hashed_password", response_model=schemas.UserSelect)
-def add_hashed_password(user: schemas.UserCreate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["items"])):
+def add_hashed_password(user: schemas.UserCreate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])):
     if not current_user:
         return False
     db_password = crud.get_hashed_password_by_name(
@@ -162,7 +162,7 @@ def read_articles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 
 @app.patch("/articles/{article_id}", response_model=schemas.ArticleSelect)
 def update_article(
-    article_id: int, article: schemas.ArticleUpdate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["items"])
+    article_id: int, article: schemas.ArticleUpdate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])
 ):
     if not current_user:
         return False
@@ -171,7 +171,7 @@ def update_article(
 
 @app.patch("/users/{user_id}", response_model=schemas.UserSelect)
 def update_password(
-    user_id: int, hashed_password: schemas.PasswordUpdate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["items"])
+    user_id: int, hashed_password: schemas.PasswordUpdate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])
 ):
     if not current_user:
         return False
