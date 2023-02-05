@@ -123,10 +123,10 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),cu
 
 
 @app.post("/users", response_model=schemas.UserSelect)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])):
-    if not current_user:
-        return False
-    
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db),):
+    # if not current_user:
+    #     return False
+    #current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])
     db_user = crud.get_user_by_name(db, name=user.name,)
 
     if db_user:
