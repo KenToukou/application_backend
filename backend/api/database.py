@@ -22,12 +22,13 @@ DB_URL = os.getenv("DB_URL", f'mysql+mysqlconnector://{user}:{password}@{host}/{
 
 engine = sqlalchemy.create_engine(
     f'{DB_URL}?{db_option}',
-    encoding='utf-8',
+    
     echo=True,
     pool_size=db_pool_size,
     max_overflow=db_max_overflow,
     pool_recycle=db_pool_recycle,
     pool_pre_ping=db_pool_pre_ping
+    
 )
 
 Base = sqlalchemy.ext.declarative.declarative_base()

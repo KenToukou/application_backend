@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional,Union
 
 from pydantic import BaseModel as PydanticBaseModel
 from datetime import datetime
@@ -13,6 +13,9 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class TokenData(BaseModel):
+    username: Union[str, None] = None
+    scopes: List[str] = []
 
 class ArticleCreate(BaseModel):
     title: str

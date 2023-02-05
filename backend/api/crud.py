@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from sqlalchemy import desc
 
-from api import models, schemas
+from api import models, schemas,auth
 
 
 def get_user(db: Session, user_id: int) -> models.User:
@@ -41,7 +41,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 5):
 def create_user(db: Session, user: schemas.UserCreate):
     db_user = models.User(
         name=user.name,
-        hashed_password=user.hashed_password
+        hashed_password= auth.get_password_hash(user.hashed_password)
     )
     db.add(db_user)
     db.commit()
