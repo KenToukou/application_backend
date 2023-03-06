@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, status,Security
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from enum import Enum
-from api import crud, schemas, auth
+from api import crud, schemas, auth, models
 from api.auth import (authenticate_user, create_access_token,
                       create_refresh_token, get_current_user, oauth2_scheme)
 from api.database import SessionLocal, engine, get_db
@@ -17,11 +17,6 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 app = FastAPI()
-
-
-class ModelName(str, Enum):
-    username = "username"
-    password = "password"
 
 
 origins = [
@@ -76,14 +71,14 @@ async def login(db: Session = Depends(get_db),
     refresh_token_expires = timedelta(days=2)
     print("Hello login02")
     if user.id ==1:
-        scope_list:list = ["common","master"]
+        form_data.scopes:list = ["common","master"]
     else: 
-        scope_list:list = ["common"]
+        form_data.scopes:list = ["common"]
     access_token = create_access_token(
-        data={"sub": user.name,"scopes":scope_list}, expires_delta=access_token_expires
+        data={"sub": user.name,"scopes":form_data.scopes}, expires_delta=access_token_expires
     )
     refresh_token = create_refresh_token(
-        data={"sub": user.name,"scopes":scope_list}, expires_delta=refresh_token_expires)
+        data={"sub": user.name,"scopes":form_data.scopes}, expires_delta=refresh_token_expires)
     print("Hello login 03")
     user_info = crud.get_user_by_name(db, form_data.username)
     user_info_id = user_info.id
@@ -97,7 +92,7 @@ async def login(db: Session = Depends(get_db),
 
 
 @app.get("/view_token")
-async def read_items_token(token: str = Depends(oauth2_scheme),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])):
+async def read_items_token(token: str = Depends(oauth2_scheme),current_user = Security(auth.get_current_active_user, scopes=["master"])):
     if not current_user:
         return False
     return {"token": token}
@@ -115,7 +110,7 @@ async def read_users_me(current_user=Depends(auth.get_current_active_user)):
 
 
 @app.get("/users", response_model=List[schemas.UserSelect])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])):
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),current_user = Security(auth.get_current_active_user, scopes=["master"])):
     if not current_user:
         return False
     users = crud.get_users(db, skip=skip, limit=limit)
@@ -135,7 +130,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db),):
 
 
 @app.post("/add_hashed_password", response_model=schemas.UserSelect)
-def add_hashed_password(user: schemas.UserCreate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])):
+def add_hashed_password(user: schemas.UserCreate, db: Session = Depends(get_db),current_user = Security(auth.get_current_active_user, scopes=["master"])):
     if not current_user:
         return False
     db_password = crud.get_hashed_password_by_name(
@@ -153,7 +148,7 @@ def add_hashed_password(user: schemas.UserCreate, db: Session = Depends(get_db),
 
 
 @app.get("/articles", response_model=List[schemas.ArticleSelect])
-def read_articles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user)):
+def read_articles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db),current_user = Security(auth.get_current_active_user)):
     if not current_user:
         return False
     articles = crud.get_articles(db, skip=skip, limit=limit)
@@ -162,7 +157,7 @@ def read_articles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 
 @app.patch("/articles/{article_id}", response_model=schemas.ArticleSelect)
 def update_article(
-    article_id: int, article: schemas.ArticleUpdate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])
+    article_id: int, article: schemas.ArticleUpdate, db: Session = Depends(get_db),current_user = Security(auth.get_current_active_user, scopes=["master"])
 ):
     if not current_user:
         return False
@@ -171,7 +166,7 @@ def update_article(
 
 @app.patch("/users/{user_id}", response_model=schemas.UserSelect)
 def update_password(
-    user_id: int, hashed_password: schemas.PasswordUpdate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user, scopes=["master"])
+    user_id: int, hashed_password: schemas.PasswordUpdate, db: Session = Depends(get_db),current_user = Security(auth.get_current_active_user, scopes=["master"])
 ):
     if not current_user:
         return False
@@ -180,7 +175,7 @@ def update_password(
 
 @app.put("/articles/{article_id}", response_model=schemas.ArticleSelect)
 def add_confirmed_user(
-    article_id: str, user: schemas.AddConfirmedUser, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user)
+    article_id: str, user: schemas.AddConfirmedUser, db: Session = Depends(get_db),current_user = Security(auth.get_current_active_user)
 ):
     if not current_user:
         return False
@@ -192,7 +187,7 @@ def add_confirmed_user(
 
 @app.post("/users/{user_id:int}/articles", response_model=schemas.ArticleSelect)
 def add_article(
-    user_id: int, article: schemas.ArticleCreate, db: Session = Depends(get_db),current_user: schemas.UserSelect = Security(auth.get_current_active_user)
+    user_id: int, article: schemas.ArticleCreate, db: Session = Depends(get_db),current_user = Security(auth.get_current_active_user)
 ):
     if not current_user:
         return False

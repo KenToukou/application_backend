@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Union, List
 # from unicodedata import name
 from passlib.context import CryptContext
-# import hashlib
+import sqlalchemy
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from api import models, schemas
@@ -41,9 +41,9 @@ def get_password_hash(password):
 
 
 def get_user(db: Session, username: str):
-    print("Userはどこだ")
+    print("Userはどこだ", username)
     user = db.query(models.User).filter(models.User.name == username).first()
-    print("結果：",user.hashed_password)
+    print(type(user))
     print(user.name)
     if username in user.name:
 
@@ -116,13 +116,14 @@ async def get_current_user(security_scopes: SecurityScopes,token: str = Depends(
         
         if username is None:
             raise credentials_exception
-        token_scopes = payload.get("scopes", [])# 右の[]で型が決まる
+        token_scopes = payload.get("scopes", [])
+        print("スコープ",token_scopes)# 右の[]で型が決まる
         token_data = schemas.TokenData(scopes=token_scopes,username=username)
         
     except (JWTError, ValidationError):
         raise credentials_exception
     user = get_user(db, username=token_data.username)
-    print(user, "問題なし")
+    print(user.name, "問題なし")
     if user is None:
         raise credentials_exception
     for scope in security_scopes.scopes: #security_scopes に保存されているリスト（scopes)の中のscopeと同じscopeがあるかそうか探している。
@@ -132,12 +133,12 @@ async def get_current_user(security_scopes: SecurityScopes,token: str = Depends(
                 detail="Not enough permissions",
                 headers={"WWW-Authenticate": authenticate_value},
             )
-    return user
+    return True
 
 
 async def get_current_active_user(
-    current_user: schemas.UserSelect = Security(get_current_user, scopes=["common"])
+    current_user: models.User = Security(get_current_user, scopes=["common"])
 ):
-    if current_user:
+    if current_user == False:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
